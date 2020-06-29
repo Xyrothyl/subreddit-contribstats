@@ -37,7 +37,29 @@ def makeParser():
                         help="limit maximum number of returned results")
     parser.add_argument("-n", action="store_true",
                         help="number results")
+    parser.add_argument("-G", "--get_post", type=int,
+                        help="""instead of accumulating statistics, """
+                             """print out the nth most recent post.""")
     return parser
+
+def printPost(sub, n):
+    count = 0
+    for post in sub.new(limit=None):
+        time = dt.utcfromtimestamp(post.created_utc)
+        if post.link_flair_text == "MOD POST":
+            continue
+        elif count < n:
+            count += 1
+        else:
+            print("""Printing the {}th most recent post to r/{}...\n"""
+                  """  Title:  {}\n"""
+                  """  Author: {}""".format(
+                      n, sub, post.title, post.author.name))
+            if post.selftext:
+                print("-----\n{}\n-----".format(post.selftext))
+            else:
+                print("-----\n<{}>\n-----".format(post.url))
+            return
 
 def main():
     def countPosts(base, post):
@@ -65,6 +87,10 @@ def main():
     except KeyError:
         print("invalid option supplied for --stat;")
         print("\tvalid options include:", list(stats.keys()))
+        return
+
+    if args.get_post is not None:
+        printPost(sub, args.get_post)
         return
 
     lst = evalStat(bot, sub, args.window, aux)
