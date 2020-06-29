@@ -73,10 +73,22 @@ def printPost(sub, feed, n):
         elif count < n:
             count += 1
         else:
-            print("""Printing the {}th most {} post to r/{}...\n"""
+            
+            nth = "th"
+            ones = n % 10
+            tens = n % 100 - ones
+            if tens != 10:
+                if ones == 1:
+                    nth = "st"
+                elif ones == 2:
+                    nth = "nd"
+                elif ones == 3:
+                    nth = "rd"
+
+            print("""Printing the {}{} most {} post to r/{}...\n"""
                   """  Title:  {}\n"""
                   """  Author: {}""".format(
-                      n, feed, sub, post.title, post.author.name))
+                      n, th, feed, sub, post.title, post.author.name))
             if post.selftext:
                 print("-----\n{}\n-----".format(post.selftext))
             else:
