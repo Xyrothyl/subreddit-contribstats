@@ -3,9 +3,9 @@ import datetime
 from datetime import datetime as dt
 import argparse
 
-def evalStat(bot, sub, win, aux):
+def evalStat(bot, feed, win, aux):
     stat = {}
-    for post in sub.new(limit=None):
+    for post in feed(limit=None):
         time = dt.utcfromtimestamp(post.created_utc)
         if dt.now() - time > \
            datetime.timedelta(days=win):
@@ -28,6 +28,10 @@ def makeParser():
     parser.add_argument("-s", "--subreddit", type=str,
                         default="historicalworldpowers",
                         help="select subreddit to scan")
+    parser.add_argument("-f", "--feed", type=str,
+                        choices=["hot", "new"],
+                        default="new",
+                        help="select feed to read from")
     parser.add_argument("-w", "--window", type=float,
                         default=7,
                         help="maximum age of post, in days")
@@ -39,22 +43,22 @@ def makeParser():
                         help="number results")
     parser.add_argument("-G", "--get_post", type=int,
                         help="""instead of accumulating statistics, """
-                             """print out the nth most recent post.""")
+                             """print out the nth post in the feed.""")
     return parser
 
-def printPost(sub, n):
+def printPost(sub, feed, n):
     count = 0
-    for post in sub.new(limit=None):
+    for post in getattr(sub, feed)(limit=None):
         time = dt.utcfromtimestamp(post.created_utc)
         if post.link_flair_text == "MOD POST":
             continue
         elif count < n:
             count += 1
         else:
-            print("""Printing the {}th most recent post to r/{}...\n"""
+            print("""Printing the {}th most {} post to r/{}...\n"""
                   """  Title:  {}\n"""
                   """  Author: {}""".format(
-                      n, sub, post.title, post.author.name))
+                      n, feed, sub, post.title, post.author.name))
             if post.selftext:
                 print("-----\n{}\n-----".format(post.selftext))
             else:
@@ -90,10 +94,10 @@ def main():
         return
 
     if args.get_post is not None:
-        printPost(sub, args.get_post)
+        printPost(sub, args.feed, args.get_post)
         return
 
-    lst = evalStat(bot, sub, args.window, aux)
+    lst = evalStat(bot, getattr(sub, args.feed), args.window, aux)
     count = 0
     for author, num in lst:
         if args.results and count >= args.results:
