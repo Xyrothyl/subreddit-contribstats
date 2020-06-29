@@ -4,6 +4,14 @@ from datetime import datetime as dt
 import argparse
 
 def evalStat(bot, feed, win, aux):
+    """Calculate user statistics for a given subreddit.
+
+    Keyword arguments:
+    bot -- valid Reddit application, can be read-only
+    feed -- feed to draw from
+    win -- max. number of days ago a submission could have been posted
+    aux -- statistical aggregation function taking an int and a post
+    """
     stat = {}
     for post in feed(limit=None):
         time = dt.utcfromtimestamp(post.created_utc)
@@ -21,6 +29,8 @@ def evalStat(bot, feed, win, aux):
     return lst
 
 def makeParser():
+    """Generate user-facing arg-parser for subreddit-contribstats"""
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-S", "--stat", type=str,
                         default="posts",
@@ -47,6 +57,14 @@ def makeParser():
     return parser
 
 def printPost(sub, feed, n):
+    """Print a single post from the given subreddit.
+
+    Keyword arguments:
+    sub -- the name of a subreddit
+    feed -- the feed to draw from, e.g. 'hot', 'new', etc.
+    n -- the number of the post to output
+    """
+
     count = 0
     for post in getattr(sub, feed)(limit=None):
         time = dt.utcfromtimestamp(post.created_utc)
@@ -66,26 +84,17 @@ def printPost(sub, feed, n):
             return
 
 def main():
-    def countPosts(base, post):
-        return base + 1
-    def countChars(base, post):
-        return base + len(post.selftext)
-    def countWords(base, post):
-        return base + len(post.selftext.split())
-    def countKarma(base, post):
-        return base + post.score
-
     stats = {
-        "posts": countPosts,
-        "chars": countChars,
-        "words": countWords,
-        "karma": countKarma
+        "posts": lambda base, post: base + 1,
+        "chars": lambda base, post: base + len(post.selftext),
+        "words": lambda base, post: base + len(post.selftext.split()),
+        "karma": lambda base, post: base + post.score
     }
 
     args = makeParser().parse_args()
 
-    bot = praw.Reddit('bot1')
     try:
+        bot = praw.Reddit('bot1')
         sub = bot.subreddit(args.subreddit)
         aux = stats[args.stat]
     except KeyError:
